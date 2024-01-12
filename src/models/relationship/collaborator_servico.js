@@ -1,4 +1,4 @@
-import { Schema, Types } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 const collaboratorServiceSchema  = new Schema({
     serviceId: {
@@ -7,14 +7,15 @@ const collaboratorServiceSchema  = new Schema({
         required: true
     },
     collaboratorId: {
-        types: Types.ObjectId,
-        ref: "Collaborator",
+        type: Types.ObjectId,
+        ref: "Collaborator",    
         required: true
     },
     status: {
         type: String,
         enum: ["A", "I", "E"],
-        required: true
+        required: true,
+        default: "A"
     },
     data: {
         type: Date,
@@ -22,4 +23,4 @@ const collaboratorServiceSchema  = new Schema({
     }
 })
 
-export default collaboratorServiceSchema
+export default model("CollaboratorService", collaboratorServiceSchema)

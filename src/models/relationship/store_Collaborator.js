@@ -1,25 +1,26 @@
-import { Schema, Types } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 const store_CollaboratorSchema  = new Schema({
     storeId: {
         type: Types.ObjectId,
-        ref: "BarberShop",
+        ref:  "Store",
         required: true
     },
     collaboratorId: {
-        types: Types.ObjectId,
-        ref: "Collaborator",
-        required: true
+        type: Types.ObjectId,
+        required: true,
+        ref: "Collaborator"
     },
     status: {
         type: String,
         enum: ["A", "I"],
-        required: true
+        required: true,
+        default: "A"
     },
-    data: {
+    createdAt: {
         type: Date,
         default: Date.now
     }
 })
 
-export default store_CollaboratorSchema
+export default model("store_Collaborator", store_CollaboratorSchema)

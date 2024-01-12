@@ -2,75 +2,120 @@ import Service from "../models/service.js";
 import Scheduling from "../models/scheduling.js";
 import { processAvailableDays } from "../utils/scheduling.js";
 import { processTimesBySlots } from "../utils/shared.js";
+import Store from "../models/store.js";
+import Collaborator from "../models/collaborator.js";
+import Client from "../models/client.js";
 
-const registerScheduling = async (req, res) => {
+const registerScheduling = async (req, res, next) => {
   const { serviceId, collaboratorId, date, payment } = req.body;
   const { storeId } = req.params;
-  const isInvalidDatas = !(serviceId && collaboratorId && date && payment)
+  const isInvalidDatas = !(serviceId && collaboratorId && date && payment);
   if (isInvalidDatas) {
-    return res.status(400).json({ message: "Dados enviados estão incompletos" });
+    return res
+      .status(400)
+      .json({ message: "Dados enviados estão incompletos" });
   }
 
   try {
-    const store = {};
-    if (!store) {
+    const storeExists = await Store.countDocuments({ _id: storeId });
+
+    if (!storeExists) {
       return res.status(404).json({ message: "Loja não cadastrada" });
     }
 
-    const collaborator = { recipient_id: "12312312" };
+    const collaborator = await Collaborator.findById(collaboratorId).select(
+      "recipientId"
+    );
+
     if (!collaborator) {
       return res.status(400).json({ message: "Colaborador não cadastrado" });
     }
 
-    const service = { commission: 10, value: 6000, duration: 60 };
+    const service = await Service.findById(serviceId).select(
+      "commission duration price"
+    );
+    
     if (!service) {
       return res.status(400).json({ message: "Serviço não cadastrado" });
     }
 
-    const notExistsScheduling = false; // checar se a empresa com o colaborador estão ocupado nesse horário
-    if (notExistsScheduling) {
+    const schedulingDate = new Date(date);
+
+    const schedulingRange = new Date(date);
+    schedulingRange.setMinutes(schedulingRange.getMinutes() + service.duration);
+
+    const existsScheduling = await Scheduling.findOne({
+      $or: [
+        {
+          $or: [
+            {
+              startDate: {
+                $gte: schedulingDate,
+                $lt: schedulingRange,
+              },
+              collaboratorId,
+            },
+            {
+              endDate: {
+                $gt: schedulingDate,
+                $lte: schedulingRange,
+              },
+              collaboratorId,
+            },
+          ],
+        },
+        {
+          startDate: {
+            $lt: schedulingDate,
+          },
+          endDate: {
+            $gt: schedulingRange,
+          },
+          collaboratorId,
+        },
+      ],
+    }).select("id");
+
+    if (existsScheduling) {
       return res.status(400).json({ message: "Horário já agendado" });
     }
 
     const clientId = "659571a778d694bc8f309da3"; // variável de requisição
-    let transactionId;
+    let transaction;
     if (payment.type === "O") {
       // pagamento realizado
-      const { custommer_id: client } = { custommer_id: "324324" };
-      transactionId = "123123sada32";
-
-    } else {
-      transactionId = "123123sada32";
+      //const client = await Client.findById(clientId).select("customerId")
+      transaction = "123123sada32";
     }
-    
-    const scheduling = await Scheduling({
+
+    await Scheduling({
       clientId,
       collaboratorId,
       storeId,
       serviceId,
       commission: service.commission,
-      value: service.value,
-      transactionId,
-      date: new Date(date)
+      value: service.price,
+      transaction,
+      startDate: schedulingDate,
+      endDate: schedulingRange,
     }).save();
-   
 
     return res
       .status(201)
       .json({ message: "Agendamento realizado com sucesso" });
-
-  } catch ({name, message}) {
-    if(name === "ValidationError") {
-      return res.status(400).json({message})
+  } catch ({ name, message }) {
+    if (name === "ValidationError") {
+      return res.status(400).json({ message });
     }
-    return res.status(500).json({ message: "Erro interno do servidor" });
+    next();
   }
 };
 const findSchedules = async (req, res) => {
   const { storeId, serviceId, date } = req.body;
   try {
-    if (storeId) {
-      return res.status(400);
+
+    if (!storeId) {
+      return res.status(400).json("");
     }
     // Processar os dias disponíveis
     /*
@@ -82,31 +127,61 @@ const findSchedules = async (req, res) => {
    */
     const storeFound = { days: [0, 1, 3, 4, 5, 6] };
 
-    const availableDays = processAvailableDays(storeFound.days, 10);
+    //const availableDays = processAvailableDays(storeFound.days, 7);
 
     //Buscar os horários dos dias de funcionamento do empresa e serviço
-    const schedulingTime = [
-      {
-        collaboratorId: {
-          id: "312312321",
-          name: "Alisson",
-          lastName: "Alves",
-        },
-        serviceId: {
-          duration: 60,
-        },
-        date: "10:30",
+    
+    const schedulingTime = {
+      service: {
+        duration: 60,
+        price: 10.00,
+        title: "Corte de cabelo",
+        photo: "url",
       },
-    ];
+      collaborators: [
+        {
+          "3223234242342342": {
+            name: "Alisson",
+            lastName: "Alves",
+            photo: "url"
+          },
+          time: {
+            "2024-01-12": [
+              "08:30", "10:30", "11:00"
+            ],
+            "2024-01-13": [
+              "08:00", "10:30", "12:00"
+            ]
+          },
+        },
+        {
+          "3223234242342342": {
+            name: "Alon",
+            lastName: "Aes",
+            photo: "url"
+          },
+          time: {
+            "2024-01-12": [
+              "08:30", "12:30", "15:00"
+            ],
+            "2024-01-13": [
+              "08:00", "13:30", "16:00"
+            ]
+          },
+        }
+      ]
+    }
+    
     //tratar para um objeto de resposta
+    /*
     const formatedSchedulingTime = schedulingTime.reduce(
       (formated, schudiling) => {},
       {}
     );
 
     console.log(formatedSchedulingTime);
-
-    return res.status(200).json(availableDays);
+  */
+    return res.status(200).json(schedulingTime);
   } catch (error) {}
 };
 

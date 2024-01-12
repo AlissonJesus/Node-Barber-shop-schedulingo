@@ -1,6 +1,6 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
-const ClientSchema = new Schema({
+const clientSchema = new Schema({
   name: {
     type: String,
     required: [true, "Nome é obrigatório"],
@@ -52,11 +52,15 @@ const ClientSchema = new Schema({
     number: String,
     nation: String,
   },
-  date: {
+  customerId: {
+    type: Types.ObjectId,
+    required: true
+  },
+  createdAt: {
     type: Date,
     default: Date.now,
   }
   
 });
 
-export default model("Client", ClientSchema);
+export default model("Client", clientSchema);

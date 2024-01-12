@@ -30,7 +30,11 @@ const schedulingSchema = new Schema({
         required: true
     },
     transactionId: String,
-    date: {
+    startDate: {
+        type: Date,
+        required: true
+    },
+    endDate: {
         type: Date,
         required: true
     },

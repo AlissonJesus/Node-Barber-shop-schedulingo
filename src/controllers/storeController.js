@@ -8,6 +8,8 @@ const renderStore = async (req, res) => {
 const registerStore = async (req, res) => {
   try {
     const payload = req.body;
+
+    
     const store = await new Store(payload).save();
     
     res.status(201).json(store)
